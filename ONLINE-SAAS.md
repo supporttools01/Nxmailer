@@ -12,3 +12,5 @@ Deploy the `online-saas` branch as a static site (root directory, no build comma
 
 ## Security
 All user data tables have RLS. Customer policies constrain records to `auth.uid()`. Subscription changes use a server-checked admin RPC. The admin UI is a convenience layer, not the security boundary; RLS and the RPC enforce access.
+
+Deployment workflow retriggered after the repository Pages source was configured for GitHub Actions.
