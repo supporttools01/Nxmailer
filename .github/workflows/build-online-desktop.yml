@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 jobs:
@@ -37,3 +37,18 @@ jobs:
           path: desktop-online/release/*.exe
           if-no-files-found: error
           retention-days: 14
+      - name: Publish public installer release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: online-latest
+          name: Send Mail Now Online Desktop (Latest)
+          body: |
+            Windows desktop wrapper for the Send Mail Now online workspace.
+            Install this app, then sign in using your customer account.
+            The hosted workspace must be available at https://supporttools01.github.io/Nxmailer/.
+          prerelease: true
+          draft: false
+          overwrite_files: true
+          files: desktop-online/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
