@@ -21,6 +21,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate browser JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          match = re.search(r'<script type="module">(.*?)</script>', html, re.S)
+          if not match:
+              raise SystemExit("Inline module script not found")
+          Path("/tmp/send-mail-now.mjs").write_text(match.group(1), encoding="utf-8")
+          PY
+          node --check /tmp/send-mail-now.mjs
       - name: Prepare static site
         run: |
           mkdir site
