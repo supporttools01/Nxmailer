@@ -1,0 +1,21 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+const cors = {"Access-Control-Allow-Origin":"https://supporttools01.github.io","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json"};
+const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
+const b64url=(bytes:Uint8Array)=>btoa(Array.from(bytes,b=>String.fromCharCode(b)).join("")).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const hmac=async(value:string,secret:string)=>{const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);return b64url(new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(value))))};
+Deno.serve(async(req:Request)=>{
+ if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+ if(req.method!=="POST")return reply({error:"POST required"},405);
+ const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),clientId=Deno.env.get("GOOGLE_CLIENT_ID"),clientSecret=Deno.env.get("GOOGLE_CLIENT_SECRET");
+ if(!url||!anon||!clientId||!clientSecret)return reply({error:"Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Supabase Edge Function secrets."},503);
+ const authorization=req.headers.get("Authorization");if(!authorization?.startsWith("Bearer "))return reply({error:"Sign in required"},401);
+ const userClient=createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}});
+ const {data,error}=await userClient.auth.getUser();if(error||!data.user)return reply({error:"Sign in again before connecting Gmail."},401);
+ const {error:sessionError}=await userClient.rpc("claim_active_session");if(sessionError)return reply({error:"This login session is no longer active. Sign in again."},401);
+ const payload=b64url(new TextEncoder().encode(JSON.stringify({uid:data.user.id,ts:Date.now(),nonce:crypto.randomUUID()})));
+ const state=payload+"."+await hmac(payload,clientSecret);
+ const redirectUri="https://qismpexnxgwisyjjepyt.supabase.co/functions/v1/gmail-oauth-callback";
+ const params=new URLSearchParams({client_id:clientId,redirect_uri:redirectUri,response_type:"code",scope:"openid email profile https://www.googleapis.com/auth/gmail.send",access_type:"offline",prompt:"consent",include_granted_scopes:"true",state});
+ return reply({authorization_url:"https://accounts.google.com/o/oauth2/v2/auth?"+params.toString()});
+});
