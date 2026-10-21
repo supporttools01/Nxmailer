@@ -1,0 +1,54 @@
+name: Build Send Mail Now Online Desktop Installer
+
+on:
+  push:
+    branches:
+      - online-saas
+    paths:
+      - 'desktop-online/**'
+      - '.github/workflows/build-online-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop-online
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Windows installer
+        run: npm run dist:win
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Send-Mail-Now-Online-Windows-Installer
+          path: desktop-online/release/*.exe
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish public installer release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: online-latest
+          name: Send Mail Now Online Desktop (Latest)
+          body: |
+            Windows desktop wrapper for the Send Mail Now online workspace.
+            Install this app, then sign in using your customer account.
+            The hosted workspace must be available at https://supporttools01.github.io/Nxmailer/.
+          prerelease: true
+          draft: false
+          overwrite_files: true
+          files: desktop-online/release/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

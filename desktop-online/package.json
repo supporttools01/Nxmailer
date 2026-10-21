@@ -1,0 +1,33 @@
+{
+  "name": "send-mail-now-desktop",
+  "version": "1.0.1",
+  "description": "Send Mail Now secure desktop window for the online workspace",
+  "main": "main.js",
+  "author": "Send Mail Now",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.sendmailnow.desktop",
+    "productName": "Send Mail Now",
+    "directories": { "output": "release" },
+    "files": ["main.js", "preload.js", "package.json"],
+    "win": {
+      "target": ["nsis"],
+      "artifactName": "Send-Mail-Now-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Send Mail Now"
+    }
+  }
+}
