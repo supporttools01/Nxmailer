@@ -2,28 +2,49 @@
 
 The `online-saas` branch hosts the customer workspace in the separate Supabase project `qismpexnxgwisyjjepyt`. Customer authentication and tenant data are backed by Supabase Auth and row-level security (RLS).
 
-## Features currently implemented
+## Customer workspace — preserved
+
+The existing `index.html` customer workspace remains intact. Its current customer-facing features are preserved:
 
 - Customer signup, sign-in, sign-out, and password reset
-- Customer-owned contacts, campaign drafts, templates, and profile
-- Owner-only Super Admin UI for user listing and subscription changes
-- Admin role protected by database privileges and the server-checked subscription RPC
-- Encrypted Resend API credential storage using Supabase Vault
-- Server-side campaign sender Edge Function with account ownership checks, active-subscription enforcement, suppression filtering, monthly allowance and hourly cap checks, batch sending, recipient status updates, and event logs
-- Windows desktop wrapper that opens the hosted workspace in a hardened Electron window
+- Customer-owned contacts with tags and Excel/CSV import/export
+- Campaign drafts and batch sending
+- Reusable HTML templates
+- Profile and subscription view
+- Customer-owned SMTP sender setup
+- Resend API sender setup
+- Owner-only Super Admin area and subscription management
+
+No existing desktop-emailer source/build chunks are replaced by the new owner console.
+
+## New owner admin console
+
+A separate polished owner console is available at `/admin.html` when the GitHub Pages site is deployed. It uses the same Supabase project and verifies the signed-in user's `profiles.role` before loading admin data.
+
+Admin console sections:
+
+- Overview — customers, active/trial subscriptions, campaigns, configured senders, and plan mix
+- Customers — searchable customer list with subscription management
+- Subscriptions — plan, status, start/end date, and monthly allowance
+- Campaign activity — operational campaign overview
+- API & Sending — Resend API and SMTP capability/status guidance
+- System — environment and release notes
+
+The new console is additive: the original customer workspace is not removed or rewritten.
+
+## Email delivery setup
+
+The online workspace sends through the existing server-side sender flow. Resend HTTPS API is supported, with API keys stored in Supabase Vault and never returned to the browser after saving. Customer-owned SMTP credentials are also stored in Vault and retrieved only by the protected sending service.
+
+The owner must assign an active/trial subscription and a monthly allowance before a customer can send. Provider acceptance/delivery still needs an actual test using a verified sender/domain.
 
 ## Deployment
 
 - Static site deployment workflow: `.github/workflows/deploy-online-saas.yml`
-- Expected public URL: https://supporttools01.github.io/Nxmailer/
+- Expected public URL: `https://supporttools01.github.io/Nxmailer/`
+- Owner console: `https://supporttools01.github.io/Nxmailer/admin.html`
 - Windows installer build workflow: `.github/workflows/build-online-desktop.yml`
 - Desktop installer uses Electron with context isolation, Node integration disabled, and navigation restricted to the hosted workspace origin.
-
-## Email delivery setup required
-
-The online workspace sends through the Resend HTTPS API (not raw SMTP) because serverless Edge Functions do not provide a reliable general-purpose outbound SMTP socket. In **Account & SMTP**, configure a Resend API key and a sender address on a domain verified in Resend. The key is stored in Supabase Vault and is never returned to the browser after saving. The owner must also assign an active subscription and a monthly allowance before a customer can send.
-
-The online sender processes campaigns in small batches. The user must click **Send campaign** and confirm they have permission to contact the recipients. Only unsuppressed contacts are queued. Do not send unsolicited mail; configure consent and unsubscribe handling appropriate to your jurisdiction and provider policy.
 
 ## Security
 
@@ -34,9 +55,10 @@ The online sender processes campaigns in small batches. The user must click **Se
 - SMTP/API secrets are stored in Supabase Vault and retrieved by a service-role-only RPC for server-side sending.
 - Never commit provider keys or customer lists.
 
-## Known items that still require owner setup and end-to-end validation
+## Validation still required before calling a release production-ready
 
-- A real Resend API key and verified sender domain must be entered by the owner.
-- A paid/trial subscription and sending allowance must be assigned before sending can run.
-- Actual provider acceptance/delivery has not been test-sent yet.
-- GitHub Pages and Windows installer workflows must be checked after every deployment change.
+- Enter a real Resend API key and use a verified sender domain, or configure a customer SMTP sender.
+- Assign a real active/trial subscription and allowance.
+- Perform an end-to-end provider test send.
+- Verify GitHub Pages deployment after the new admin console is published.
+- Verify the Windows installer workflow and compare the resulting build against the existing customer emailer before replacing any release artifact.
