@@ -1,6 +1,6 @@
 {
   "name": "send-mail-now-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Send Mail Now secure desktop window for the online workspace",
   "main": "main.js",
   "author": "Send Mail Now",
